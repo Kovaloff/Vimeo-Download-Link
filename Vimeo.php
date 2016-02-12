@@ -1,17 +1,11 @@
 <?php
+
 class VideoController
 {
-
     /**
      * @var array Vimeo video quality priority
      */
-    public $vimeoQualityPrioritet = array('sd', 'hd', 'mobile');
-
-    /**
-     * @var string Vimeo video codec priority
-     */
-    public $vimeoVideoCodec = 'h264';
-
+    public $vimeoQualityPrioritet = array('720p', '540p', '360p');
     /**
      * Get direct URL to Vimeo video file
      *
@@ -28,7 +22,6 @@ class VideoController
         }
         return $result;
     }
-
     /**
      * Get Vimeo video info
      *
@@ -54,7 +47,6 @@ class VideoController
         }
         return $videoInfo;
     }
-
     /**
      * Get vimeo video object
      *
@@ -64,22 +56,21 @@ class VideoController
     public function getVimeoQualityVideo($files)
     {
         $video = null;
-        if (!property_exists($files, $this->vimeoVideoCodec) && count($files->codecs))
+        if (count($files->progressive))
         {
-            $this->vimeoVideoCodec = array_shift($files->codecs);
+            $this->vimeoVideoQuality = $files->progressive;
         }
-        $codecFiles = $files->{$this->vimeoVideoCodec};
-        foreach ($this->vimeoQualityPrioritet as $quality)
+        foreach ($this->vimeoQualityPrioritet as $k => $quality)
         {
-            if (property_exists($codecFiles, $quality))
+            if ($this->vimeoVideoQuality[$k]->quality == $quality)
             {
-                $video = $codecFiles->{$quality};
+                $video = $this->vimeoVideoQuality[$k];
                 break;
             }
         }
         if (!$video)
         {
-            foreach (get_object_vars($codecFiles) as $file)
+            foreach (get_object_vars($this->vimeoVideoQuality) as $file)
             {
                 $video = $file;
                 break;
@@ -87,7 +78,6 @@ class VideoController
         }
         return $video;
     }
-
     /**
      * Get remote content by URL
      *
@@ -99,5 +89,4 @@ class VideoController
         $output = file_get_contents($url);
         return $output;
     }
-
 }
