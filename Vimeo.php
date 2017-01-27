@@ -5,7 +5,8 @@ class VideoController
     /**
      * @var array Vimeo video quality priority
      */
-    public $vimeoQualityPrioritet = array('720p', '540p', '360p');
+    public $vimeoQualityPrioritet = array('1080p', '720p', '540p', '360p');
+
     /**
      * Get direct URL to Vimeo video file
      *
@@ -22,6 +23,20 @@ class VideoController
         }
         return $result;
     }
+
+    /**
+     * Get Vimeo Player ,Video config object
+     *
+     */
+    function getConfigObjectFromHtml($string, $start, $end) {
+        $string = ' ' . $string;
+        $ini = strpos($string, $start);
+        if ($ini == 0) return '';
+        $ini += strlen($start);
+        $len = strpos($string, $end, $ini) - $ini;
+        return substr($string, $ini, $len);
+    }
+
     /**
      * Get Vimeo video info
      *
@@ -32,14 +47,14 @@ class VideoController
     {
         $videoInfo = null;
         $page = $this->getRemoteContent($url);
-        $dom = new \DOMDocument("1.0", "utf-8");
-        libxml_use_internal_errors(true);
-        $dom->loadHTML('<?xml version="1.0" encoding="UTF-8"?>' . "\n" . $page);
-        $xPath = new \DOMXpath($dom);
-        $video = $xPath->query('//div[@data-config-url]');
-        if ($video)
+
+        $html = $this->getConfigObjectFromHtml($page, 'clip_page_config =', 'window.can_preload');
+        $json = chop(trim($html), ';');
+        $videoConfig = json_decode($json);
+
+        if (isset($videoConfig->player->config_url))
         {
-            $videoObj = json_decode($this->getRemoteContent($video->item(0)->getAttribute('data-config-url')));
+            $videoObj = json_decode($this->getRemoteContent($videoConfig->player->config_url));
             if (!property_exists($videoObj, 'message'))
             {
                 $videoInfo = $videoObj;
@@ -84,9 +99,8 @@ class VideoController
      * @param string $url remote page URL
      * @return string result content
      */
-    public function getRemoteContent($url)
-    {
-        $output = file_get_contents($url);
-        return $output;
+    function getRemoteContent($url) {
+        $data = file_get_contents($url);
+        return $data;
     }
 }
